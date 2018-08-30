@@ -8,8 +8,9 @@ _NOTE: The Access Sentinel policy store can store more complex policies than the
 The PSAccessSentinel module contains all of the PowerShell commands to manage AccessSentinel policies. It has a dependency on the PSLDAP PowerShell module (provided in binary form), which also needs to me installed.
 After you pull the files from Github, add the top-level ~\PSAccessSentinel directory and the ~\PSAccessSentine\PSLDAP directory to your PSModulePath environment variable, and restart your PowerShell session. Then run the following PowerShell command to load the modules:
 
-`PS> Import-Module PSAccessSentinel -verbose
-PS> Get-Module PSAccessSentinel`
+`PS> Import-Module PSAccessSentinel -verbose`
+
+`PS> Get-Module PSAccessSentinel`
 
 PowerShell will display a list of commands that will now be available.
 
