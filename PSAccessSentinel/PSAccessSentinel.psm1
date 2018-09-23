@@ -79,7 +79,7 @@ Function Set-DefaultASConnection {
         Write-Verbose "Default UserDN: $($global:_DefaultASConnection.UserDN)"
         Write-Verbose "Default Password: $($global:_DefaultASConnection.Password)"
         Write-Verbose "Default DomainDN: $($global:_DefaultASConnection.DomainDN)"
-        [Console]::Title = "Access Sentinel $($global:_DefaultASConnection.Hostname) ($($global:_DefaultASConnection.DomainDN))"
+        $Host.UI.RawUI.WindowTitle = "Access Sentinel $($global:_DefaultASConnection.Hostname) ($($global:_DefaultASConnection.DomainDN))"
     }
     
 Function Get-DefaultASConnection {
