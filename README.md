@@ -14,4 +14,6 @@ After you pull the files from Github, add the top-level ~\PSAccessSentinel direc
 
 PowerShell will display a list of commands that will now be available.
 
+## Changes
 
+23 Sep 2018 - Addressed "Invalid handle" error in some versions of PowerShell
