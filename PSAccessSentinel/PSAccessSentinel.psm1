@@ -169,10 +169,6 @@ function _Parse-AttributeString {
         [Parameter(Position=0, HelpMessage="An SDUA attribute string")][string]$SDUAString
     )
     $Attribute = @{}
-    #
-    # N.B. Does not currently handle attribute option: 
-    # permittedValues { <comma separated list of quoted strings> }
-    #
     $Regex = '{\s*' + 
         'displayName\s+"(?<displayName>[^"]+)"' +
         '\s*,\s*' +
@@ -212,7 +208,6 @@ function _Parse-AttributeString {
         }
         if($Matches.ContainsKey('permittedValues')){
             # Strip the redundant spaces and quotes from each value and add it to the values array
-            Write-Host "PermittedValues $permittedValues"
             $permittedValues = @();
             $Matches['permittedValues'].Split(",") | %{$permittedValues += $_.Trim().Trim('"')}
             $Attribute.Add('permittedValues', $permittedValues)
