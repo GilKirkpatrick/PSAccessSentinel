@@ -170,13 +170,10 @@ function _Parse-AttributeString {
     )
     $Attribute = @{}
     #
-    # N.B. Does not currently handle attribute options from the VMA, including:
-    # mustBePresent <boolean>
-    # issuerAttribute <boolean>
-    # obsolete <boolean
+    # N.B. Does not currently handle attribute option: 
     # permittedValues { <comma separated list of quoted strings> }
     #
-    $Regex = '\{\s*' + 
+    $Regex = '{\s*' + 
         'displayName\s+"(?<displayName>[^"]+)"' +
         '\s*,\s*' +
         'category\s+"(?<category>[^"]+)"' + 
@@ -185,13 +182,17 @@ function _Parse-AttributeString {
         '\s*,\s*' + 
         'dataType\s+"(?<dataType>[^"]+)"' + 
         '(\s*,\s*type\s+(?<ldapType>[^\s]+))?' +
-        '\s*\}'
+        '(\s*,\s*mustBePresent\s+(?<mustBePresent>(TRUE|FALSE)))?' + 
+        '(\s*,\s*issuerAttribute\s+(?<issuerAttribute>(TRUE|FALSE)))?' + 
+        '(\s*,\s*obsolete\s+(?<obsolete>(TRUE|FALSE)))?' + 
+        '(\s*,\s*permittedValues\s+{(?<permittedValues>("[^"]*"(\s*,\s*"[^"]*")*)?)})?' +
+        '\s*}'
 
     if([string]::IsNullOrEmpty($SDUAString)){
         Write-Verbose "The set of attribute definitions is empty"
         $null
     }
-    elseif($SDUAString -cmatch $Regex){
+    elseif($SDUAString -cmatch $Regex) {
         $Attribute.Add('displayName', $Matches['displayName'])
         $Attribute.Add('idOrSel', $Matches['idOrSel'])
         $Attribute.Add('category', $Matches['category'])
@@ -199,6 +200,22 @@ function _Parse-AttributeString {
         $Attribute.Add('attribute', $Matches['attribute'])
         if($Matches.ContainsKey('ldapType')){
             $Attribute.Add('ldapType', $Matches['ldapType'])
+        }
+        if($Matches.ContainsKey('mustBePresent')){
+            $Attribute.Add('mustBePresent', $Matches['mustBePresent'])
+        }
+        if($Matches.ContainsKey('issuerAttribute')){
+            $Attribute.Add('issuerAttribute', $Matches['issuerAttribute'])
+        }
+        if($Matches.ContainsKey('obsolete')){
+            $Attribute.Add('obsolete', $Matches['obsolete'])
+        }
+        if($Matches.ContainsKey('permittedValues')){
+            # Strip the redundant spaces and quotes from each value and add it to the values array
+            Write-Host "PermittedValues $permittedValues"
+            $permittedValues = @();
+            $Matches['permittedValues'].Split(",") | %{$permittedValues += $_.Trim().Trim('"')}
+            $Attribute.Add('permittedValues', $permittedValues)
         }
     }
     else {
