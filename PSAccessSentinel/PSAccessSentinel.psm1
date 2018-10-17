@@ -364,6 +364,7 @@ Function Get-ASVersions {
     )
     $Filter = '(&(objectClass=subentry)(viewDSXACMLPolicyVersion=*))'
     $Entry = Get-LDAPObject -Connection ($ASConnection.LDAPCon) -DN ($ASConnection.DomainDN) -Filter $Filter -Scope Subtree -Attributes $script:VersionAttrs
+
     # The version attribute is multivalued and each value is an SDUA string that looks something like this:
     # { identifer "1.1", issuer "some issuer", locked FALSE, base "1.0" }
     # identifier is mandatory, the others are optional
@@ -376,7 +377,10 @@ Function Get-ASVersions {
 
     $Entry.viewDSXACMLPolicyVersion | ForEach-Object {
         # Extract identifier (mandatory string), issuer (optional string), locked (optional bool, and base (optional string).
-        if($_ -match $Regex){
+        if($_ -eq $null){
+            return $null
+        }
+        elseif($_ -match $Regex){
             $Version = @{
                 'Identifer'=$Matches.id;
                 'Issuer'=$Matches.issuer;
@@ -386,7 +390,7 @@ Function Get-ASVersions {
             return New-Object PSObject -Property $Version
         }
         else {
-            Throw "Unexpected version identifier $_"
+            Throw "Unexpected version identifier '$_'"
         }
     }
 }
