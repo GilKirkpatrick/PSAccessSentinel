@@ -81,7 +81,9 @@
         'Get-ASVersions',
         'Get-ASActiveVersion',
         'Add-ASAttributeDefinition',
-        'Remove-ASAttributeDefinition'
+        'Remove-ASAttributeDefinition',
+        'New-XACMLRequestAttr',
+        'Send-XACMLRequest'
         )
     
     # Cmdlets to export from this module

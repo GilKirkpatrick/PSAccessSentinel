@@ -401,3 +401,65 @@ Function Lock-ASVersion {
         [Parameter(Position=0, HelpMessage="A connection to the Access Sentinel instance you are managed")][PSObject]$ASConnection = (Get-DefaultASConnection)
     )
 }
+
+Function New-XACMLRequestAttr {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$True, Position=0, HelpMessage="The id of the attribute")][string]$AttributeId,
+        [Parameter(Mandatory=$True, Position=1, HelpMessage="The value of the attribute")][string]$Value,
+        [Parameter(Mandatory=$False, Position=2, HelpMessage="The data type of the attribute")]
+            [ValidateSet('string', 'boolean', 'integer', 'double', 'time', 'date', 'dateTime', 'dayTimeDuration', 'yearMonthDuration', 'anyURI', 'hexBinary', 'base64Binary', 'rfc822Name', 'x500Name', 'ipAddress', 'dnsName', 'xpathExpression')]
+            [string]$DataType
+    )
+    $Attr = @{
+        'AttributeId'=$AttributeId;
+        'Value'=$Value
+    }
+    if(-not [string]::IsNullOrEmpty($DataType)){
+        $Attr.Add('DataType', $DataType)
+    }
+    return New-Object PSCustomObject -Property $Attr
+}
+
+Function _Add-XACMLRequestAttrs {
+    [CmdletBinding()]
+    param(
+        [Parameter(HelpMessage="The request object to add attributes to")][Hashtable]$Request,
+        [Parameter(Mandatory=$True, Position=1, HelpMessage="The name of the category the attributes belong to")][string]$CategoryName,
+        [Parameter(Mandatory=$True, Position=2, HelpMessage="The set of attributes to add")][AllowNull()][PSCustomObject[]]$Attrs
+    )
+    if($Request -eq $null){
+        $Request = @{'Request'=@{}}
+    }
+    if($Attrs -ne $null){
+        $Request.Request.Add($CategoryName, @{})
+        $Request.Request.$CategoryName.Add('Attribute', @())
+        foreach($Attr in $Attrs){
+            $Request.Request.$CategoryName.Attribute += $Attr
+        }
+    }
+    return $Request
+}
+
+Function Send-XACMLRequest {
+    [CmdletBinding()]
+    param(
+        [Parameter(Position=0, Mandatory=$True, HelpMessage="The URL of the PDP endpoint to send the request to")][string]$Uri,
+        [Parameter(HelpMessage="The set of subject attributes")][PSCustomObject[]]$SubjectAttrs,
+        [Parameter(HelpMessage="The set of subject attributes")][PSCustomObject[]]$ResourceAttrs,
+        [Parameter(HelpMessage="The set of subject attributes")][PSCustomObject[]]$ActionAttrs
+    )
+
+    $Request = $null
+    $Request = _Add-XACMLRequestAttrs -Request $Request -Category 'AccessSubject' -Attrs $SubjectAttrs
+    $Request = _Add-XACMLRequestAttrs -Request $Request -Category 'Resource' -Attrs $ResourceAttrs
+    $Request = _Add-XACMLRequestAttrs -Request $Request -Category 'Action' -Attrs $ActionAttrs
+    $Body = ConvertTo-JSON -Depth 10 $Request
+    if(-not $Uri.Contains('/authorization/pdp')){
+        $Uri = "$Uri/authorization/pdp"
+    }
+    Write-Verbose $Uri
+    Write-Verbose $Body
+
+    Invoke-RestMethod -Uri $Uri -Method Post -ContentType 'application/xacml+json;version=3.0' -Body $Body
+}
