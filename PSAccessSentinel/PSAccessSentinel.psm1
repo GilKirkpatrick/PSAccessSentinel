@@ -247,6 +247,7 @@ Function Get-ASABACPolicy {
             Throw "No policy text found in entry $_"
         }
         $PolicyXML = [xml]($Policy.PolicyText)
+        $Policy.Add('DN', $_.DN)
         $Policy.Add('Version', $PolicyXML.Policy.Version)
         $Policy.Add('Target', $_.DN.Parent)
         $Policy.Add('Effect', $PolicyXML.Policy.Rule.Effect)
@@ -261,16 +262,19 @@ Function Add-ASABACPolicy {
     [CmdletBinding(DefaultParameterSetName="Policy")]
     param (
         [Parameter(Position=0, HelpMessage="A connection to the Access Sentinel instance you are managed")][PSObject]$ASConnection = (Get-DefaultASConnection),
-        [Parameter(Mandatory=$True, HelpMessage="The DN of the target directory entry")][string]$Target,
-        [Parameter(Mandatory=$True, HelpMessage="The scope of the policy, either 'Entry' or 'Subtree'")][ValidateSet('Entry', 'Subtree')][string]$Scope,
+        [Parameter(HelpMessage="The DN of the target directory entry")][string]$Target,
+        [Parameter(HelpMessage="The scope of the policy, either 'Entry' or 'Subtree'")][ValidateSet('Entry', 'Subtree')][string]$Scope = 'Subtree',
         [Parameter(Position=1, Mandatory=$True, ParameterSetName="Policy", HelpMessage="The complete XACML Policy XML text")][string]$PolicyText,
-        [Parameter(Position=1, Mandatory=$True, ParameterSetName="Condition", HelpMessage="The XACML Condition XML text")][string]$Condition,
-        [Parameter(Mandatory=$True, ParameterSetName="Condition", HelpMessage="The name of the rule to create")][string]$Name,
-        [Parameter(Mandatory=$True, ParameterSetName="Condition", HelpMessage="The effect of the rule, either Permit or Deny")][ValidateSet('Permit','Deny')][string]$Effect,
-        [Parameter(Mandatory=$True, ParameterSetName="Condition", HelpMessage="The name of the rule to create")][string]$Description = 'Created via LDAP'
+        [Parameter(Position=1, Mandatory=$True, ParameterSetName="Condition", HelpMessage="The name of the rule to create")][string]$Name,
+        [Parameter(ParameterSetName="Condition", HelpMessage="The XACML Condition XML text")][string]$Condition = '',
+        [Parameter(ParameterSetName="Condition", HelpMessage="The effect of the rule, either Permit or Deny")][ValidateSet('Permit','Deny')][string]$Effect = 'Permit',
+        [Parameter(ParameterSetName="Condition", HelpMessage="The name of the rule to create")][string]$Description = 'Created via LDAP'
     )
+    if([string]::IsNullOrEmpty($Target)){
+        $Target = $ASConnection.DomainDN
+    }
     if($PSCmdlet.ParameterSetName -eq 'Policy'){
-        # The entire policy text is provided in $PolicyXML. Extract the bits we need to create the directory entry
+        # The entire policy text is provided in $PolicyText. Extract the bits we need to create the directory entry
         $PolicyXML= [xml]$PolicyText
         $ID = $PolicyXML.Policy.PolicyId
         $Version = $PolicyXML.Policy.Version
@@ -333,7 +337,7 @@ Function Remove-ASABACPolicy {
     $Filter = "(&(objectClass=subentry)(|(objectClass=viewDSXACMLSubtreePolicySubentry)(objectClass=viewDSXACMLEntryPolicySubentry))(cn=$ID*))"
     $Entry = Get-LDAPObject -Connection $ASConnection.LDAPCon -DN ($ASConnection.DomainDN) -Scope Subtree -Filter $Filter | Select -First 1
     Write-Verbose "Deleting policy ID $ID, DN is $($_.DN)"
-    Remove-LDAPObject -Connection $ASConnection.LDAPCon -DN $_.DN
+    Remove-LDAPObject -Connection $ASConnection.LDAPCon -DN $Entry.DN
 }
 
 Function Get-ASActiveVersion {
@@ -346,7 +350,7 @@ Function Get-ASActiveVersion {
     if($Entry -ne $null){
         $Regex = '\{\s*version\s+"(?<issuer>[^"]+)"\s*\}'
         if($Entry.viewDSXACMLActivePolicy[0] -match $Regex){
-            return $Matches.issuer
+            Write-Output $Matches.issuer
         }
         else {
             Throw "Unexpected active version value $($Entry.viewDSXACMLActivePolicy)"
