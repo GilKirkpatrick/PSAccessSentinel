@@ -17,3 +17,4 @@ PowerShell will display a list of commands that will now be available.
 ## Changes
 * 23 Sep 2018 - Addressed "Invalid handle" error in some versions of PowerShell
 * 5 Oct 2018 - Addressed "Failed parsing attribute definition" error when attribute definitions contain option values such as mustBePresent, issuerAttribute, obsolete, and permittedValues
+* 1 Dec 2018 - Added New-XACMLRequestAttr and Send-XACMLRequest functions to test policy behavior from PowerShell
